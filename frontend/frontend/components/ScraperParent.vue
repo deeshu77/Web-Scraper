@@ -1,7 +1,7 @@
 <template>
   <div>
     <!-- ScraperChild component emits selected components -->
-    <ScraperChild @update:selected="handleSelected" />
+    <ScraperChild :htmlContent="htmlContent" @update:selected="handleSelected" />
     
     <div style="margin-top: 20px;">
       <h3>Selected Elements:</h3>
@@ -19,6 +19,9 @@
 import { ref } from 'vue'
 import ScraperChild from './ScraperChild.vue' // Import ScraperChild component
 
+const props = defineProps({
+  htmlContent: String
+})
 // Array to store the selected components
 const selected = ref([])
 

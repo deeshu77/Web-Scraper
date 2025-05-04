@@ -5,40 +5,45 @@
       id="preview"
       ref="iframe"
       sandbox="allow-same-origin allow-scripts"
-      style="width: 100%; height: 500px; border: 1px solid #ccc;"
+      style="width: 100%; height: 400px; border: 1px solid #ccc;"
     ></iframe>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import { ref, watch, onMounted, nextTick } from 'vue'
 
 // Define the emit function
 const emit = defineEmits(['update:selected'])
+
 const selected = ref([])
 const iframe = ref(null)
 
-onMounted(() => {
-  // Load HTML content from public/test.html and inject into the iframe
-  loadHTML()
+// Accept htmlContent as a prop
+const props = defineProps({
+  htmlContent: String
 })
 
-const loadHTML = async () => {
+// Watch for changes in htmlContent prop and inject the content into iframe
+watch(() => props.htmlContent, (newHtmlContent) => {
+  if (newHtmlContent) {
+    loadHTML(newHtmlContent)
+  }
+}, { immediate: true })
+
+const loadHTML = (htmlContent) => {
   try {
-    // Fetch the HTML content from the public/test.html file
-    const response = await axios.get('/test.html')
-    const htmlContent = response.data
+    // Ensure the iframe is fully loaded before writing content
+    nextTick(() => {
+      const doc = iframe.value.contentDocument
+      doc.open()
+      doc.write(htmlContent)
+      doc.close()
 
-    // Inject HTML content into the iframe
-    const doc = iframe.value.contentDocument
-    doc.open()
-    doc.write(htmlContent)
-    doc.close()
-
-    injectInspector(doc)  // Call the function to enable the inspector
+      injectInspector(doc)  // Call the function to enable the inspector
+    })
   } catch (error) {
-    console.error('Error loading HTML content:', error)
+    console.error('Error loading HTML content into iframe:', error)
   }
 }
 
@@ -87,17 +92,18 @@ const injectInspector = (doc) => {
     e.stopPropagation()
 
     const html = e.target.outerHTML
-    e.target.classList.add('selected-element')
-    selected.value.push(html)
-    
-    // Emit the selected element to the parent
-    emit('update:selected', selected.value)
+    if (!selected.value.includes(html)) {
+      e.target.classList.add('selected-element')
+      selected.value.push(html)
+
+      // Emit the selected element to the parent
+      emit('update:selected', selected.value)
+    }
   }, true)
 }
 </script>
 
 <style>
-
 iframe {
   width: 100%;
   height: 500px;
